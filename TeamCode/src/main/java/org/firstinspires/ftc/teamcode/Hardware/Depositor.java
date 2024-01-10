@@ -1,13 +1,14 @@
 package org.firstinspires.ftc.teamcode.Hardware;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.Hardware_Optimisations.LimitSwitch;
@@ -15,11 +16,11 @@ import org.firstinspires.ftc.teamcode.Hardware_Optimisations.OptimisedMotor;
 import org.firstinspires.ftc.teamcode.Hardware_Optimisations.OptimisedServo;
 import org.firstinspires.ftc.teamcode.PID_Classes.PID_Coefficients;
 import org.firstinspires.ftc.teamcode.PID_Classes.PID_Controller;
-import org.opencv.core.Mat;
 
+@Config
 public class Depositor{
     DcMotorEx lSlide, rSlide;
-    OptimisedMotor leftSlide = new OptimisedMotor(lSlide);
+    public OptimisedMotor leftSlide = new OptimisedMotor(lSlide);
     OptimisedMotor rightSlide = new OptimisedMotor(rSlide);
 
     Servo lExt, rExt, lBuck, rBuck, lLatch, rLatch;
@@ -33,10 +34,15 @@ public class Depositor{
     DigitalChannel lSwitch;
     LimitSwitch limitSwitch = new LimitSwitch(lSwitch);
 
-    PID_Coefficients pid = new PID_Coefficients(0.5,0.0,0.2);
+    public static int LIFT_TARGET_POSITION = 0;
+    public static double P = 0.015;
+    public static double I = 0.0;
+    public static double D = 0.005;
+    public static PID_Coefficients pid = new PID_Coefficients(P, I, D);
     PID_Controller liftController = new PID_Controller(pid);
-
     LiftStates liftState = LiftStates.IDLE;
+    int liftPixelLevel = 1;
+
     LeftArmStates leftArmState = LeftArmStates.IN;
     RightArmStates rightArmState = RightArmStates.IN;
     LeftExtensionStates leftExtensionState = LeftExtensionStates.IN;
@@ -59,8 +65,8 @@ public class Depositor{
         leftSlide.setPower(0.0);
         rightSlide.setPower(0.0);
 
-        leftSlide.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightSlide.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftSlide.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightSlide.setDirection(DcMotorSimple.Direction.FORWARD);
 
         leftSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -181,29 +187,9 @@ public class Depositor{
     }
 
     public enum LiftStates{
-        IDLE(-1),
-        RETRACT(0),
-        PIXEL1(Constants.pixel_1_position),
-        PIXEL2(Constants.pixel_1_position + Constants.pixel_level_increment),
-        PIXEL3(Constants.pixel_1_position + Constants.pixel_level_increment * 2),
-        PIXEL4(Constants.pixel_1_position + Constants.pixel_level_increment * 3),
-        PIXEL5(Constants.pixel_1_position + Constants.pixel_level_increment * 4),
-        PIXEL6(Constants.pixel_1_position + Constants.pixel_level_increment * 5),
-        PIXEL7(Constants.pixel_1_position + Constants.pixel_level_increment * 6),
-        PIXEL8(Constants.pixel_1_position + Constants.pixel_level_increment * 7),
-        PIXEL9(Constants.pixel_1_position + Constants.pixel_level_increment * 8),
-        PIXEL10(Constants.pixel_1_position + Constants.pixel_level_increment * 9),
-        PIXEL11(Constants.pixel_1_position + Constants.pixel_level_increment * 10);
-
-        int pos;
-
-        LiftStates(int pos){
-            this.pos = pos;
-        }
-
-        int get(){
-            return pos;
-        }
+        IDLE,
+        RETRACT,
+        SCORING
     }
     
     public void toggleLatches() {
@@ -243,18 +229,51 @@ public class Depositor{
     public double servoPCOntroller(double currentPos, double target) {
         double error = target - currentPos;
         if (Math.abs(error) > 0.13)
-            return currentPos + 0.0025 * Math.signum(error);
-        else return currentPos + 0.003 * Math.signum(error);
+            return currentPos + 0.0035 * Math.signum(error);
+        else  if (Math.abs(error) > 0.07)
+            return currentPos + 0.004 * Math.signum(error);
+        else return target;
     }
 
-    public void update(){
-        if (liftState != LiftStates.IDLE && liftState != LiftStates.RETRACT) {
-            leftSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftState.get()));
-            rightSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftState.get()));
+    public void retractLift(){
+        liftState = LiftStates.RETRACT;
+    }
+
+    public void raiseLiftOrPixelLevel() {
+        if (liftState == LiftStates.SCORING) {
+            liftPixelLevel += 2;
+            liftPixelLevel = Range.clip(liftPixelLevel, 1, 11);
+        } else {
+            liftState = LiftStates.SCORING;
         }
-        else if (liftState == LiftStates.IDLE) {
-            leftSlide.setPower(0.0);
-            rightSlide.setPower(0.0);
+    }
+
+    public void lowerPixelLevel() {
+        liftPixelLevel -= 2;
+        liftPixelLevel = Range.clip(liftPixelLevel, 1, 11);
+    }
+
+    public int liftTargetPosition = 0;
+
+    public void update(){
+        liftController.setCoefficients(new PID_Coefficients(P, I, D));
+        if (liftState == LiftStates.SCORING) {
+            liftTargetPosition = Constants.pixel_1_position + (liftPixelLevel - 1) * Constants.pixel_level_increment;
+            leftSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftTargetPosition));
+            rightSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftTargetPosition));
+        } else if (liftState == LiftStates.RETRACT) {
+            if (limitSwitch.isPressed()) {
+                liftState = LiftStates.IDLE;
+                leftSlide.setPower(0.0);
+                rightSlide.setPower(0.0);
+                leftSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                rightSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                leftSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rightSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            } else {
+                leftSlide.setPower(-1.0);
+                rightSlide.setPower(-1.0);
+            }
         }
         leftBucket.setPosition(servoPCOntroller(leftBucket.getPosition(), leftArmState.getArmPos()));
         leftLatch.setPosition(leftLatchState.getLatchPos());

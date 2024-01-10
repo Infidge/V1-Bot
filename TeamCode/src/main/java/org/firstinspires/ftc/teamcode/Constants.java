@@ -18,8 +18,8 @@ public class Constants {
     public static double left_latch_open = 0.4;
     public static double right_latch_open = 0.35;
 
-    public static int pixel_1_position = 0;
-    public static int pixel_level_increment = 0;
+    public static int pixel_1_position = 60;
+    public static int pixel_level_increment = 59;
     
     /**Intake constants*/
     public static double left_intake_collect = 0.995;

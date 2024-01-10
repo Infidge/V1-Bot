@@ -40,6 +40,8 @@ public class Tele_Op extends LinearOpMode {
 
         waitForStart();
 
+        int pixel_level = 1;
+
         while (opModeIsActive()){
             currentGamepad1.copy(gamepad1);
             currentGamepad2.copy(gamepad2);
@@ -62,6 +64,16 @@ public class Tele_Op extends LinearOpMode {
             if (currentGamepad2.a && !previousGamepad2.a)
                 depo.toggleLatches();
 
+            if (currentGamepad2.left_bumper) {
+                depo.retractLift();
+            }
+
+            if (currentGamepad2.dpad_up && !previousGamepad2.dpad_up) {
+                depo.raiseLiftOrPixelLevel();
+            } else if (currentGamepad2.dpad_down && !previousGamepad2.dpad_down) {
+                depo.lowerPixelLevel();
+            }
+
             previousGamepad1.copy(currentGamepad1);
             previousGamepad2.copy(currentGamepad2);
 
@@ -69,6 +81,9 @@ public class Tele_Op extends LinearOpMode {
             dt.mecanumDrive(gamepad1);
             intake.update();
             depo.update();
+
+            telemetry.addData("poz lift:", depo.leftSlide.getCurrentPosition());
+            telemetry.update();
             //launcher.update();
         }
     }
