@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Hardware;
 
-import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -17,7 +16,6 @@ import org.firstinspires.ftc.teamcode.Hardware_Optimisations.OptimisedServo;
 import org.firstinspires.ftc.teamcode.PID_Classes.PID_Coefficients;
 import org.firstinspires.ftc.teamcode.PID_Classes.PID_Controller;
 
-@Config
 public class Depositor{
     DcMotorEx lSlide, rSlide;
     public OptimisedMotor leftSlide = new OptimisedMotor(lSlide);
@@ -33,12 +31,8 @@ public class Depositor{
 
     DigitalChannel lSwitch;
     LimitSwitch limitSwitch = new LimitSwitch(lSwitch);
-
-    public static int LIFT_TARGET_POSITION = 0;
-    public static double P = 0.015;
-    public static double I = 0.0;
-    public static double D = 0.005;
-    public static PID_Coefficients pid = new PID_Coefficients(P, I, D);
+    
+    PID_Coefficients pid = new PID_Coefficients(0.015, 0.0, 0.005);
     PID_Controller liftController = new PID_Controller(pid);
     LiftStates liftState = LiftStates.IDLE;
     int liftPixelLevel = 1;
@@ -84,15 +78,12 @@ public class Depositor{
         leftLatch.setName("left_latch", hwMap);
         rightLatch.setName("right_latch", hwMap);
 
-        //leftExtension.setPosition(leftExtensionState.get());
-        //rightExtension.setPosition(rightExtensionState.get());
         leftBucket.setPosition(leftArmState.getArmPos());
         rightBucket.setPosition(rightArmState.getArmPos());
         leftLatch.setPosition(leftLatchState.getLatchPos());
         rightLatch.setPosition(rightLatchState.getLatchPos());
 
         limitSwitch.setName("limit_switch", hwMap);
-
     }
 
     public enum LeftArmStates{
@@ -260,12 +251,9 @@ public class Depositor{
         liftPixelLevel = Range.clip(liftPixelLevel, 1, 11);
     }
 
-    public int liftTargetPosition = 0;
-
     public void update(){
-        liftController.setCoefficients(new PID_Coefficients(P, I, D));
         if (liftState == LiftStates.SCORING) {
-            liftTargetPosition = Constants.pixel_1_position + (liftPixelLevel - 1) * Constants.pixel_level_increment;
+            int liftTargetPosition = Constants.pixel_1_position + (liftPixelLevel - 1) * Constants.pixel_level_increment;
             leftSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftTargetPosition));
             rightSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftTargetPosition));
         } else if (liftState == LiftStates.RETRACT) {
