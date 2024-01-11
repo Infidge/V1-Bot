@@ -213,7 +213,14 @@ public class Depositor{
     }
 
     public void updateToggle() {
-        if (extensionDelay.seconds() > 0.3 && toggling){
+        double extensionDelayValue;
+        if (goOut) {
+            extensionDelayValue = 1.0;
+        } else {
+            extensionDelayValue = 0.3;
+        }
+        
+        if (extensionDelay.seconds() > extensionDelayValue && toggling){
             if (!goOut) {
                 leftArmState = LeftArmStates.IN;
                 rightArmState = RightArmStates.IN;
