@@ -39,9 +39,7 @@ public class Tele_Op extends LinearOpMode {
         intakeToggleTime.reset();
 
         waitForStart();
-
-        int pixel_level = 1;
-
+        
         while (opModeIsActive()){
             currentGamepad1.copy(gamepad1);
             currentGamepad2.copy(gamepad2);
@@ -76,14 +74,11 @@ public class Tele_Op extends LinearOpMode {
 
             previousGamepad1.copy(currentGamepad1);
             previousGamepad2.copy(currentGamepad2);
-
-
+            
             dt.mecanumDrive(gamepad1);
             intake.update();
             depo.update();
 
-            telemetry.addData("poz lift:", depo.leftSlide.getCurrentPosition());
-            telemetry.update();
             //launcher.update();
         }
     }
