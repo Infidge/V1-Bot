@@ -227,9 +227,9 @@ public class Depositor{
     public double servoPCOntroller(double currentPos, double target) {
         double error = target - currentPos;
         if (Math.abs(error) > 0.13)
-            return currentPos + 0.003 * Math.signum(error);
-        else  if (Math.abs(error) > 0.07)
             return currentPos + 0.0035 * Math.signum(error);
+        else  if (Math.abs(error) > 0.07)
+            return currentPos + 0.004 * Math.signum(error);
         else return target;
     }
 
