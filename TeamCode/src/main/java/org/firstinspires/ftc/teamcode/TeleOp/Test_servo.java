@@ -12,13 +12,14 @@ public class Test_servo extends LinearOpMode {
     @Override
     public void runOpMode(){
 
-        servo1 = hardwareMap.get(Servo.class, "right_bucket");
-        servo2 = hardwareMap.get(Servo.class, "right_latch");
+        servo1 = hardwareMap.get(Servo.class, "left_bucket");
+        servo2 = hardwareMap.get(Servo.class, "right_bucket");
 
         waitForStart();
 
         while (opModeIsActive()){
             servo1.setPosition(1.0);
+            servo2.setPosition(0.0);
         }
     }
 }

@@ -26,9 +26,9 @@ public class Intake {
     RevColorSensorV3 leftSensor;
     RevColorSensorV3 rightSensor;
 
-    IntakeStates intakeState = IntakeStates.TRANSFER;
-    IntakeSpinnerStates intakeSpinnerState = IntakeSpinnerStates.STOP;
-    IntakePixelCount intakePixels = IntakePixelCount.EMPTY;
+    public IntakeStates intakeState = IntakeStates.TRANSFER;
+    public IntakeSpinnerStates intakeSpinnerState = IntakeSpinnerStates.STOP;
+    public IntakePixelCount intakePixels = IntakePixelCount.EMPTY;
 
     boolean autoRaise = false;
 

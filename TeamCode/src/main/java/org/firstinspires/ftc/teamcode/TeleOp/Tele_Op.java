@@ -59,9 +59,6 @@ public class Tele_Op extends LinearOpMode {
             if (currentGamepad2.b && !previousGamepad2.b)
                 depo.toggleBuckets();
 
-            if (currentGamepad2.a && !previousGamepad2.a)
-                depo.toggleLatches();
-
             if (currentGamepad2.left_bumper) {
                 depo.retractLift();
             }

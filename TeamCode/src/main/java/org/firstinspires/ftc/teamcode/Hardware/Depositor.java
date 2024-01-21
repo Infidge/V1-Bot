@@ -19,7 +19,7 @@ import org.firstinspires.ftc.teamcode.PID_Classes.PID_Controller;
 public class Depositor{
     DcMotorEx lSlide, rSlide;
     public OptimisedMotor leftSlide = new OptimisedMotor(lSlide);
-    OptimisedMotor rightSlide = new OptimisedMotor(rSlide);
+    public OptimisedMotor rightSlide = new OptimisedMotor(rSlide);
 
     Servo lExt, rExt, lBuck, rBuck, lLatch, rLatch;
     OptimisedServo leftExtension = new OptimisedServo(lExt);
@@ -32,7 +32,7 @@ public class Depositor{
     DigitalChannel lSwitch;
     LimitSwitch limitSwitch = new LimitSwitch(lSwitch);
     
-    PID_Coefficients pid = new PID_Coefficients(0.015, 0.0, 0.005);
+    PID_Coefficients pid = new PID_Coefficients(0.01, 0.0, 0.005);
     PID_Controller liftController = new PID_Controller(pid);
     LiftStates liftState = LiftStates.IDLE;
     int liftPixelLevel = 1;
@@ -59,8 +59,8 @@ public class Depositor{
         leftSlide.setPower(0.0);
         rightSlide.setPower(0.0);
 
-        leftSlide.setDirection(DcMotorSimple.Direction.REVERSE);
-        rightSlide.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftSlide.setDirection(DcMotorSimple.Direction.FORWARD);
+        rightSlide.setDirection(DcMotorSimple.Direction.REVERSE);
 
         leftSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -206,7 +206,7 @@ public class Depositor{
     public void updateToggle() {
         double extensionDelayValue;
         if (goOut) {
-            extensionDelayValue = 1.0;
+            extensionDelayValue = 0.5;
         } else {
             extensionDelayValue = 0.3;
         }
@@ -227,9 +227,18 @@ public class Depositor{
     public double servoPCOntroller(double currentPos, double target) {
         double error = target - currentPos;
         if (Math.abs(error) > 0.13)
-            return currentPos + 0.0035 * Math.signum(error);
+            return currentPos + 0.003 * Math.signum(error);
         else  if (Math.abs(error) > 0.07)
-            return currentPos + 0.004 * Math.signum(error);
+            return currentPos + 0.0035 * Math.signum(error);
+        else return target;
+    }
+
+    public double servoPCOntrollerAuton(double currentPos, double target) {
+        double error = target - currentPos;
+        if (Math.abs(error) > 0.13)
+            return currentPos + 0.007 * Math.signum(error);
+        else  if (Math.abs(error) > 0.07)
+            return currentPos + 0.008 * Math.signum(error);
         else return target;
     }
 
@@ -239,7 +248,7 @@ public class Depositor{
 
     public void raiseLiftOrPixelLevel() {
         if (liftState == LiftStates.SCORING) {
-            liftPixelLevel += 2;
+            liftPixelLevel += 1;
             liftPixelLevel = Range.clip(liftPixelLevel, 1, 11);
         } else {
             liftState = LiftStates.SCORING;
@@ -247,7 +256,7 @@ public class Depositor{
     }
 
     public void lowerPixelLevel() {
-        liftPixelLevel -= 2;
+        liftPixelLevel -= 1;
         liftPixelLevel = Range.clip(liftPixelLevel, 1, 11);
     }
 
@@ -273,6 +282,34 @@ public class Depositor{
         leftBucket.setPosition(servoPCOntroller(leftBucket.getPosition(), leftArmState.getArmPos()));
         leftLatch.setPosition(leftLatchState.getLatchPos());
         rightBucket.setPosition(servoPCOntroller(rightBucket.getPosition(), rightArmState.getArmPos()));
+        rightLatch.setPosition(rightLatchState.getLatchPos());
+        updateToggle();
+        leftExtension.setPosition(leftExtensionState.get());
+        rightExtension.setPosition(rightExtensionState.get());
+    }
+
+    public void updateAuton(){
+        if (liftState == LiftStates.SCORING) {
+            int liftTargetPosition = Constants.pixel_1_position + (liftPixelLevel - 1) * Constants.pixel_level_increment;
+            leftSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftTargetPosition));
+            rightSlide.setPower(liftController.update(leftSlide.getCurrentPosition(), liftTargetPosition));
+        } else if (liftState == LiftStates.RETRACT) {
+            if (limitSwitch.isPressed()) {
+                liftState = LiftStates.IDLE;
+                leftSlide.setPower(0.0);
+                rightSlide.setPower(0.0);
+                leftSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                rightSlide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                leftSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                rightSlide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            } else {
+                leftSlide.setPower(-1.0);
+                rightSlide.setPower(-1.0);
+            }
+        }
+        leftBucket.setPosition(servoPCOntrollerAuton(leftBucket.getPosition(), leftArmState.getArmPos()));
+        leftLatch.setPosition(leftLatchState.getLatchPos());
+        rightBucket.setPosition(servoPCOntrollerAuton(rightBucket.getPosition(), rightArmState.getArmPos()));
         rightLatch.setPosition(rightLatchState.getLatchPos());
         updateToggle();
         leftExtension.setPosition(leftExtensionState.get());
